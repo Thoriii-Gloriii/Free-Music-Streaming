@@ -1,0 +1,131 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: Android build variant
+        type: choice
+        options: [debug, release, izzy]
+        default: debug
+      app-version:
+        description: Optional appVersion override (for example 14.0.0-nightly)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      VARIANT: ${{ inputs.variant || 'debug' }}
+      APP_VERSION_OVERRIDE: ${{ inputs.app-version }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Validate Compose resources and APK collection
+        run: |
+          python3 scripts/check_compose_resource_escapes.py
+          python3 -m unittest discover -s scripts -p 'test_collect_android_apks.py'
+
+      - name: Resolve app version
+        id: config
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$APP_VERSION_OVERRIDE"
+          if [[ -z "$version" ]]; then
+            while IFS='=' read -r key value; do
+              if [[ "$key" == "appVersion" ]]; then version="$value"; break; fi
+            done < gradle.properties
+          fi
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9][A-Za-z0-9._-]*)?(\+[0-9A-Za-z.-]+)?$ ]] || {
+            echo "Invalid appVersion: $version" >&2; exit 1; }
+          if [[ -n "$APP_VERSION_OVERRIDE" ]]; then
+            echo "ORG_GRADLE_PROJECT_appVersion=$version" >> "$GITHUB_ENV"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare CI Gradle
+        uses: ./.github/actions/prepare-ci-gradle
+        with:
+          cache-scope: android-${{ env.VARIANT }}
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          persist-configuration-cache: 'false'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+        with:
+          packages: platform-tools
+
+      - name: Prepare Android signing
+        if: env.VARIANT != 'debug'
+        id: signing
+        uses: ./.github/actions/prepare-android-signing
+        env:
+          KEYSTORE_PATH: ${{ secrets.KEYSTORE_PATH }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Build APK
+        shell: bash
+        env:
+          KEYSTORE_PATH: ${{ steps.signing.outputs.keystore_path }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
+          LYPRIO_BASE_URL: ${{ secrets.LYPRIO_BASE_URL }}
+          LYPRIO_HMAC_KEY: ${{ secrets.LYPRIO_HMAC_KEY }}
+        run: |
+          set -euo pipefail
+          extra_args=()
+          if [[ "$VARIANT" != "debug" ]]; then
+            build_type="${VARIANT^}"
+            # Credentials are read at configuration time; keep them out of the configuration cache.
+            extra_args+=(--no-configuration-cache -x ":androidApp:lintVital$build_type")
+          else
+            build_type="Debug"
+          fi
+          ./gradlew ":androidApp:assemble$build_type" --no-daemon --max-workers="$(nproc)" \
+            "-Dorg.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC -Dfile.encoding=UTF-8" \
+            --no-scan "${extra_args[@]}"
+
+      - name: Collect APK
+        shell: bash
+        env:
+          APP_VERSION: ${{ steps.config.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 scripts/collect_android_apks.py \
+            "androidApp/build/outputs/apk/$VARIANT" dist "$APP_VERSION" "$VARIANT"
+          if [[ "$VARIANT" == release ]]; then
+            cp androidApp/build/outputs/mapping/release/mapping.txt dist/Metrolist-KMP-mapping.txt
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: android-${{ env.VARIANT }}
+          path: |
+            dist/*.apk
+            dist/*-mapping.txt
+          if-no-files-found: error
+          retention-days: 14
