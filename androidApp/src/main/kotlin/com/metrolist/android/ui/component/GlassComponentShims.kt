@@ -8,6 +8,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon as M3Icon
@@ -69,32 +71,19 @@ fun UiIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    shape: Shape? = null,
     content: @Composable () -> Unit
 ) {
     IconButton(onClick = onClick, modifier = modifier, enabled = enabled, content = content)
 }
 
-@Composable
-fun Button(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    M3Button(onClick = onClick, modifier = modifier, enabled = enabled) {
-        content()
-    }
+open class Button {
+    open val isEnabled: Boolean get() = true
+    @Composable
+    open fun ToolBarButton(modifier: Modifier = Modifier) {}
 }
 
-@Composable
-fun Icon(
-    painter: Painter,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    tint: Color = Color.Unspecified
-) {
-    M3Icon(painter = painter, contentDescription = contentDescription, modifier = modifier, tint = tint)
-}
+open class Icon : Button()
 
 val LocalDialogPresentation = compositionLocalOf { true }
 
@@ -109,14 +98,44 @@ suspend fun animateDialogMotion(animatable: Animatable<Float, AnimationVector1D>
     animatable.animateTo(target)
 }
 
-@Composable
-fun TabToolBar(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Box(modifier = modifier) { content() }
+object TabToolBar {
+    val HORIZONTAL_PADDING: Dp = 16.dp
+    val VERTICAL_PADDING: Dp = 8.dp
+    val TOOLBAR_ICON_SIZE: Dp = 24.dp
+
+    @Composable
+    operator fun invoke(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+        Box(modifier = modifier) { content() }
+    }
+
+    @Composable
+    fun Buttons(
+        buttons: List<Button>,
+        horizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceEvenly,
+        verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
+        modifier: Modifier = Modifier,
+        disableAnimation: Boolean = false,
+    ) {
+        Row(modifier, horizontalArrangement, verticalAlignment) {
+            buttons.forEach { it.ToolBarButton() }
+        }
+    }
 }
 
-@Composable
-fun EllipsisMenuComponent(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    IconButton(onClick = onClick, modifier = modifier) {
-        // ellipsis icon
+object EllipsisMenuComponent {
+    fun init(overflowButtons: () -> List<Button>): Button = object : Button() {
+        @Composable
+        override fun ToolBarButton(modifier: Modifier) {
+            IconButton(onClick = {}, modifier = modifier) {
+                // ellipsis
+            }
+        }
+    }
+
+    @Composable
+    operator fun invoke(onClick: () -> Unit, modifier: Modifier = Modifier) {
+        IconButton(onClick = onClick, modifier = modifier) {
+            // ellipsis icon
+        }
     }
 }

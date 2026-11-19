@@ -36,7 +36,8 @@ data class Appearance(
     val colorPalette: ColorPalette,
     val thumbnailShape: Shape = RoundedCornerShape(8.dp),
     val uiRoundnessShape: Shape = RoundedCornerShape(16.dp),
-    val artistThumbnailShape: Shape = RoundedCornerShape(percent = 50)
+    val artistThumbnailShape: Shape = RoundedCornerShape(percent = 50),
+    val typography: Typography = Typography(),
 )
 
 data class Typography(
@@ -107,7 +108,7 @@ fun colorPalette(): ColorPalette {
 }
 
 @Composable
-fun surfaceColor(): Color = MaterialTheme.colorScheme.surface
+fun surfaceColor(base: Color = MaterialTheme.colorScheme.surface): Color = base
 
 @Composable
 fun uiRoundnessShape(): Shape = RoundedCornerShape(16.dp)

@@ -47,3 +47,5 @@ fun NativeMenuSheetDragHandle(modifier: Modifier = Modifier) {
 fun straightBottomMenuShape(radius: androidx.compose.ui.unit.Dp = 16.dp): Shape {
     return RoundedCornerShape(topStart = radius, topEnd = radius, bottomStart = 0.dp, bottomEnd = 0.dp)
 }
+
+fun straightBottomMenuShape(shape: Shape): Shape = shape
