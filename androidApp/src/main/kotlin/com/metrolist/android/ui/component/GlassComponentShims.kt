@@ -85,11 +85,19 @@ open class Button {
 
 open class Icon : Button()
 
-val LocalDialogPresentation = compositionLocalOf { true }
+class DialogPresentation(
+    val motion: Animatable<Float, AnimationVector1D> = Animatable(1f)
+)
 
-class NativeDialogDimming {
-    val alpha: Float = 0.5f
-}
+val LocalDialogPresentation = compositionLocalOf<DialogPresentation?> { null }
+
+@Composable
+fun NativeDialogDimming(
+    presentation: Any? = null,
+    area: Any? = null,
+    scrimColor: Any? = null,
+    scrimVisible: Boolean = false,
+) {}
 
 fun dialogFadeAlpha(fraction: Float): Float = fraction
 fun dialogScale(fraction: Float): Float = fraction

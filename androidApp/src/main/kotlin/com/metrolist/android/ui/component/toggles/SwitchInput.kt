@@ -32,12 +32,12 @@ fun rememberSwitchGestureState(checked: Boolean, enabled: Boolean): SwitchGestur
 }
 
 fun Modifier.switchInput(
-    state: SwitchGestureState,
     checked: Boolean,
     onCheckedChange: ((Boolean) -> Unit)?,
     enabled: Boolean,
     interactionSource: MutableInteractionSource?,
-    trackWidth: Dp,
+    state: SwitchGestureState,
+    position: Float,
     thumbWidth: Dp,
 ): Modifier = minimumInteractiveComponentSize()
     .toggleable(

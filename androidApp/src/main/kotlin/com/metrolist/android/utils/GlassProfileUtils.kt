@@ -3,6 +3,7 @@ package com.metrolist.android.utils
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,6 +16,8 @@ const val activeProfileKey = "activeProfile"
 fun isProfileIdSafe(profileId: String): Boolean =
     profileId.all { it.isLetterOrDigit() || it == '_' || it == '-' }
 
+fun getActiveProfile(context: Context): String = context.getActiveProfile()
+
 fun Context.getActiveProfile(): String =
     getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
         .getString(activeProfileKey, DEFAULT_PROFILE_ID) ?: DEFAULT_PROFILE_ID
@@ -22,8 +25,12 @@ fun Context.getActiveProfile(): String =
 fun Context.profilePreferences(profileId: String): SharedPreferences =
     getSharedPreferences("profile_$profileId", Context.MODE_PRIVATE)
 
+/** Property shorthand that returns the active profile's preferences. */
+val Context.profilePreferences: SharedPreferences
+    get() = profilePreferences(getActiveProfile())
+
 @Composable
-fun <T> rememberPreference(key: String, defaultValue: T): State<T> {
+fun <T> rememberPreference(key: String, defaultValue: T): MutableState<T> {
     return remember { mutableStateOf(defaultValue) }
 }
 

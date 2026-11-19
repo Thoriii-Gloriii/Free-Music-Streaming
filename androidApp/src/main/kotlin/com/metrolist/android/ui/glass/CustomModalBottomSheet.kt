@@ -104,7 +104,7 @@ fun CustomModalBottomSheet(
                 val foreground = if (contentColor.isSpecified) glassPaneForeground(contentColor, surfaceBackdropColor(),
                     TextContrast, LocalGlassInkDarkness.current ?: glassSurfaceDarkness(glass)) else LocalContentColor.current
                 CompositionLocalProvider(LocalContentColor provides foreground) {
-                    dragHandle?.let { CenteredMenuSheetDragHandle(it) }
+                    dragHandle?.invoke()
                     content()
                 }
             } else Column(modifier.fillMaxWidth()) {
@@ -113,7 +113,7 @@ fun CustomModalBottomSheet(
                     LocalGlassContainerBackdrop provides LocalGlassBackdrop.current,
                     LocalGlassMaterialSource provides LocalGlassBackdrop.current,
                 ) {
-                    dragHandle?.let { CenteredMenuSheetDragHandle(it) }
+                    dragHandle?.invoke()
                     content()
                 }
             }
@@ -239,11 +239,11 @@ fun CustomModalBottomSheet(
                             if (containerColor != Color.Transparent) {
                                 val darkness = if (glassSheet) glassSurfaceDarkness(glass.forArea(GlassArea.Menus)) else null
                                 SurfaceForegroundContent(effectiveSurfaceColor(nativeUnderlay, foregroundFill), glassInkDarkness = darkness) {
-                                    dragHandle?.let { NativeMenuSheetDragHandle(sheetState, onDismissRequest, it) }
+                                    dragHandle?.invoke()
                                     content()
                                 }
                             } else {
-                                dragHandle?.let { NativeMenuSheetDragHandle(sheetState, onDismissRequest, it) }
+                                dragHandle?.invoke()
                                 content()
                             }
                         }
