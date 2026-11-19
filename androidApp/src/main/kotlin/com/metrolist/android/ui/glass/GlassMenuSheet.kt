@@ -35,7 +35,6 @@ import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.flow.first
 
 import com.metrolist.android.ui.theme.colorPalette
-import com.metrolist.android.ui.menu.CenteredMenuSheetDragHandle
 import com.metrolist.android.ui.menu.straightBottomMenuShape
 import com.metrolist.android.ui.theme.topUiRoundnessShape
 
@@ -135,7 +134,7 @@ internal fun SharedGlassMenuSheet(
                 sheetShadowElevation = 0.dp,
                 sheetTonalElevation = 0.dp,
                 sheetDragHandle = if (maxSheetHeight.isSpecified || dragHandle == null) null
-                    else ({ CenteredMenuSheetDragHandle(dragHandle) }),
+                    else ({ dragHandle() }),
                 containerColor = Color.Transparent,
                 sheetContent = {
                     val paintScope = LocalGlassOverlayPaintScope.current
@@ -146,7 +145,7 @@ internal fun SharedGlassMenuSheet(
                     }) {
                     if (maxSheetHeight.isSpecified) {
                         Column(Modifier.heightIn(max = maxSheetHeight)) {
-                            dragHandle?.let { CenteredMenuSheetDragHandle(it) }
+                            dragHandle?.invoke()
                             content()
                         }
                     } else content()
