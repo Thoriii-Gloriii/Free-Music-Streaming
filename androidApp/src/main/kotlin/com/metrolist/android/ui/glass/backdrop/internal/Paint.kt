@@ -7,10 +7,13 @@
  * scale for cheaper effect rendering. KMP expect/actual declarations were
  * merged into this single Android source set. Package renamed accordingly.
  */
+@file:Suppress("DEPRECATION")
+
 package com.metrolist.android.ui.glass.backdrop.internal
 
 import android.graphics.BlurMaskFilter
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.asFrameworkPaint
 import com.metrolist.android.ui.glass.backdrop.RuntimeShader
 import com.metrolist.android.ui.glass.backdrop.asAndroidRuntimeShader
 
